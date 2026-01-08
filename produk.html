@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Produk - POS UMKM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="icon-512.ico" type="image/x-icon">
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d6efd">
+
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>POS UMKM</h2>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li class="active">Produk</li>
+      <li><a href="kasir.html">Kasir</a></li>
+      <li><a href="riwayat.html">Riwayat</a></li>
+    </ul>
+  </aside>
+
+  <!-- Content -->
+  <main class="content">
+    <h1>Manajemen Produk</h1>
+
+<div class="card">
+  <!--<label>Cari Produk</label>
+  <input 
+    type="text" 
+    id="searchProduk" 
+    placeholder="Ketik nama produk..."
+    oninput="renderProduk()"
+  >-->
+
+
+  <input type="text" id="searchProduk" placeholder="Cari produk...">
+
+
+  <label>Filter Stok</label>
+  <select id="filterStok" onchange="renderProduk()">
+    <option value="all">Semua</option>
+    <option value="tersedia">Stok Tersedia</option>
+    <option value="habis">Stok Habis</option>
+    <option value="menipis">Stok Menipis (≤ 5)</option>
+  </select>
+</div>
+
+<!--<button onclick="scanBarcode()">Scan Barcode</button>
+<video id="video" autoplay></video>
+<input type="text" id="barcodeProduk">-->
+<div class="card">
+  <label>Barcode Produk</label>
+  <input type="text" id="barcodeProduk" placeholder="Scan barcode..." readonly>
+
+  <video id="video" width="100%" style="display:none"></video>
+
+  <button onclick="mulaiScan()">Scan Barcode</button>
+  <button onclick="stopScan()">Stop</button>
+</div>
+
+
+
+
+
+    <!-- Form Produk -->
+<div class="card">
+  <input type="hidden" id="produkId">
+
+  <label>Nama Produk</label>
+  <input type="text" id="namaProduk" placeholder="Contoh: Kopi Susu">
+
+  <label>Modal / Unit</label>
+  <input type="number" id="modalProduk">
+
+  <label>Harga Jual / Unit</label>
+  <input type="number" id="hargaProduk">
+
+  <label>Stok Awal</label>
+  <input type="number" id="stokProduk" min="0">
+
+  <button onclick="simpanProduk()">Simpan Produk</button>
+</div>
+
+    <!-- Tabel Produk -->
+    <div class="card">
+      <h3>Daftar Produk</h3>
+      <table width="100%">
+        <thead>
+<tr>
+  <th>Nama</th>
+  <th>Modal</th>
+  <th>Harga</th>
+  <th>Stok</th>
+  <th>Aksi</th>
+</tr>
+
+        </thead>
+        <tbody id="produkTable"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/produk.js"></script>
+<script src="js/riwayat.js"></script>
+<script src="js/kasir.js"></script>
+<script src="js/dasboard.js"></script>
+<script src="js/storage.js"></script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("service-worker.js")
+    .then(() => console.log("Service Worker registered"))
+    .catch(err => console.error("SW failed:", err));
+}
+</script>
+
+
+
+</body>
+</html>

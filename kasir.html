@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kasir - POS UMKM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="icon-512.ico" type="image/x-icon">
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d6efd">
+
+
+  <link rel="stylesheet" href="style.css">
+  
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>POS UMKM</h2>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="produk.html">Produk</a></li>
+      <li><a href="riwayat.html">Riwayat</a></li>
+      <li class="active">Kasir</li>
+    </ul>
+  </aside>
+
+  <!-- Content -->
+  <main class="content">
+    <h1>Kasir</h1>
+
+
+
+    <!-- Form Kasir -->
+    <div class="card">
+      <label>Produk</label>
+      <select id="produkSelect"></select>
+
+      <label>Jumlah</label>
+      <input type="number" id="qty" value="1" min="1">
+
+      <button onclick="tambahKeKeranjang()">Tambah</button>
+    </div>
+
+
+<button onclick="scanBarcode()">Scan Barcode</button>
+<video id="video" autoplay></video>
+<input type="text" id="barcodeProduk">
+
+
+    <!-- Keranjang -->
+    <div class="card">
+      <h3>Keranjang</h3>
+      <table width="100%" id="keranjangTable">
+<thead>
+  <tr>
+    <th>Produk</th>
+    <th>Qty</th>
+    <th>Subtotal</th>
+    <th>Aksi</th>
+  </tr>
+</thead>
+
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Total -->
+<div class="card">
+  <p>Total: <strong id="totalBelanja">Rp 0</strong></p>
+  <p>Laba: <strong id="totalLaba">Rp 0</strong></p>
+<button onclick="bayar()">Bayar</button>
+
+
+</div>
+
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/kasir.js"></script>
+<script src="js/riwayat.js"></script>
+<script src="js/produk.js"></script>
+<script src="js/storage.js"></script>
+
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("service-worker.js")
+    .then(() => console.log("Service Worker registered"))
+    .catch(err => console.error("SW failed:", err));
+}
+</script>
+
+
+
+
+
+</body>
+</html>
