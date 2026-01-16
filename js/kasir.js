@@ -1,44 +1,120 @@
-/* =======================
+/* =========================
    STATE
-======================= */
+========================= */
 let keranjang = [];
 
-/* =======================
-   LOAD PRODUK
-======================= */
-function loadProduk() {
-  const select = document.getElementById("produkSelect");
-  if (!select) return;
+/* =========================
+   AUTOCOMPLETE PRODUK
+========================= */
+const produkInput = document.getElementById("produkInput");
+const produkList  = document.getElementById("produkList");
+const produkIdInp = document.getElementById("produkId");
 
-  const produk = getProduk();
-  select.innerHTML = "";
+// --- TAMBAHAN: Variabel untuk melacak posisi fokus ---
+let currentFocus = -1;
 
-  if (produk.length === 0) {
-    const opt = document.createElement("option");
-    opt.textContent = "Belum ada produk";
-    select.appendChild(opt);
+produkInput.addEventListener("input", () => {
+  const keyword = produkInput.value.toLowerCase().trim();
+  produkList.innerHTML = "";
+  
+  // --- TAMBAHAN: Reset fokus setiap kali input berubah ---
+  currentFocus = -1;
+
+  if (!keyword) {
+    produkList.style.display = "none";
     return;
   }
 
-  produk.forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p.id;
-    opt.textContent = `${p.nama} - Rp ${p.harga_jual} (Stok: ${p.stok})`;
-    select.appendChild(opt);
+  const hasil = getProduk().filter(p =>
+    p.nama.toLowerCase().includes(keyword) ||
+    (p.barcode && p.barcode.includes(keyword))
+  );
+
+  if (hasil.length === 0) {
+    produkList.style.display = "none";
+    return;
+  }
+
+  hasil.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "autocomplete-item";
+    div.innerHTML = `<strong>${p.nama}</strong><br><small>Rp ${p.harga_jual}</small>`;
+
+    div.onclick = () => pilihProduk(p);
+    produkList.appendChild(div);
   });
+
+  produkList.style.display = "block";
+});
+
+// --- TAMBAHAN: Listener Keyboard ---
+produkInput.addEventListener("keydown", function(e) {
+  let listItems = produkList.getElementsByTagName("div");
+  
+  if (e.keyCode == 40) { // Panah BAWAH
+    currentFocus++;
+    addActive(listItems);
+  } else if (e.keyCode == 38) { // Panah ATAS
+    currentFocus--;
+    addActive(listItems);
+  } else if (e.keyCode == 13) { // ENTER
+    e.preventDefault();
+    if (currentFocus > -1) {
+      if (listItems[currentFocus]) listItems[currentFocus].click();
+    }
+  }
+});
+
+function addActive(items) {
+  if (!items) return false;
+  removeActive(items);
+  if (currentFocus >= items.length) currentFocus = 0;
+  if (currentFocus < 0) currentFocus = (items.length - 1);
+  
+  items[currentFocus].classList.add("autocomplete-active");
+  
+  // Agar item yang dipilih otomatis scroll jika list panjang
+  items[currentFocus].scrollIntoView({ block: "nearest" });
 }
 
-loadProduk();
+function removeActive(items) {
+  for (let i = 0; i < items.length; i++) {
+    items[i].classList.remove("autocomplete-active");
+  }
+}
 
-/* =======================
+function pilihProduk(p) {
+  produkInput.value = p.nama;
+  produkIdInp.value = p.id;
+  produkList.style.display = "none";
+  // Pindahkan fokus ke input Qty setelah pilih produk (opsional)
+  document.getElementById("qty").focus(); 
+}
+
+
+/* ENTER = TAMBAH */
+produkInput.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    tambahKeKeranjang();
+  }
+});
+
+document.addEventListener("click", e => {
+  if (!e.target.closest(".autocomplete")) {
+    produkList.style.display = "none";
+  }
+});
+
+/* =========================
    TAMBAH KE KERANJANG
-======================= */
+========================= */
 function tambahKeKeranjang() {
-  const produkId = Number(document.getElementById("produkSelect").value);
+  const produkId = Number(produkIdInp.value);
   const qty = Number(document.getElementById("qty").value);
 
-  if (!produkId || qty <= 0) {
-    alert("Produk atau jumlah tidak valid");
+  if (!produkId) {
+    alert("Pilih produk terlebih dahulu");
     return;
   }
 
@@ -58,21 +134,33 @@ function tambahKeKeranjang() {
   const subtotal = item.harga_jual * qty;
   const laba = (item.harga_jual - item.modal) * qty;
 
-  keranjang.push({
-    id: item.id,
-    nama: item.nama,
-    qty,
-    harga: item.harga_jual,
-    subtotal,
-    laba
-  });
+  const existing = keranjang.find(k => k.id === item.id);
+  if (existing) {
+    existing.qty += qty;
+    existing.subtotal += subtotal;
+    existing.laba += laba;
+  } else {
+    keranjang.push({
+      id: item.id,
+      nama: item.nama,
+      foto: item.foto || "", // TAMBAHKAN INI: Mengambil foto dari data produk
+      qty,
+      harga: item.harga_jual,
+      subtotal,
+      laba
+    });
+  }
+
+  // Reset input setelah tambah
+  produkInput.value = "";
+  produkIdInp.value = "";
+  document.getElementById("qty").value = 1;
 
   renderKeranjang();
 }
-
-/* =======================
+/* =========================
    RENDER KERANJANG
-======================= */
+========================= */
 function renderKeranjang() {
   const tbody = document.querySelector("#keranjangTable tbody");
   tbody.innerHTML = "";
@@ -80,21 +168,27 @@ function renderKeranjang() {
   let total = 0;
   let totalLaba = 0;
 
-  keranjang.forEach((item, index) => {
+  keranjang.forEach((item, i) => {
     total += item.subtotal;
     totalLaba += item.laba;
 
     const tr = document.createElement("tr");
+    // Gunakan placeholder jika foto kosong
+    const fotoUrl = item.foto || "https://via.placeholder.com/50";
+
     tr.innerHTML = `
-      <td>${item.nama}</td>
+      <td style="display: flex; align-items: center; gap: 10px;">
+        <img src="${fotoUrl}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+        <span>${item.nama}</span>
+      </td>
       <td>
-        <input type="number" min="1" value="${item.qty}"
-          onchange="ubahQty(${index}, this.value)"
-          style="width:60px">
+        <input type="number" value="${item.qty}" min="1"
+          onchange="ubahQty(${i}, this.value)"
+          style="width:50px; padding: 4px;">
       </td>
       <td>Rp ${item.subtotal.toLocaleString("id-ID")}</td>
-      <td>
-        <button onclick="hapusItem(${index})">❌</button>
+      <td style="text-align: center;">
+        <button onclick="hapusItem(${i})" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;">❌</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -106,6 +200,19 @@ function renderKeranjang() {
   document.getElementById("totalLaba").innerText =
     "Rp " + totalLaba.toLocaleString("id-ID");
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* =======================
    UBAH QTY
@@ -216,8 +323,130 @@ function bayar() {
 
   keranjang = [];
   renderKeranjang();
-  loadProduk();
+
 }
+
+
+
+
+
+
+
+
+/* =======================
+   FUNGSI BUNYI BEEP (Scanner)
+======================= */
+function playBeep() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(660, audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.1);
+  } catch (e) {
+    console.log("Audio beep gagal");
+  }
+}
+
+/* =======================
+   SCANNER KASIR
+======================= */
+let html5QrCodeKasir;
+let scannerActive = false;
+
+function toggleScannerKasir() {
+  const container = document.getElementById("scannerContainerKasir");
+  if (scannerActive) {
+    stopScanKasir();
+    container.style.display = "none";
+  } else {
+    container.style.display = "block";
+    startScanKasir();
+  }
+}
+
+function startScanKasir() {
+  scannerActive = true;
+  html5QrCodeKasir = new Html5Qrcode("readerKasir");
+
+  const config = {
+    fps: 20,
+    qrbox: { width: 250, height: 150 },
+    aspectRatio: 1.0,
+    // Mendukung format barcode produk umum
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128,
+    ],
+  };
+
+  html5QrCodeKasir.start(
+    { facingMode: "environment" },
+    config,
+    (barcodeText) => {
+      playBeep();
+      if (navigator.vibrate) navigator.vibrate(100);
+
+      const produk = getProduk();
+      const pFound = produk.find((p) => p.barcode === barcodeText);
+
+      if (pFound) {
+        // Set nilai ke input agar fungsi tambahKeKeranjang bisa membacanya
+        document.getElementById("produkId").value = pFound.id;
+        document.getElementById("produkInput").value = pFound.nama;
+        document.getElementById("qty").value = 1;
+
+        // Panggil fungsi yang sudah ada
+        tambahKeKeranjang();
+
+        // Jeda sebentar agar tidak menscan barang yang sama berkali-kali secara instan
+        html5QrCodeKasir.pause();
+        setTimeout(() => html5QrCodeKasir.resume(), 1500);
+      } else {
+        console.log("Barcode tidak terdaftar: " + barcodeText);
+      }
+    }
+  ).catch((err) => {
+    console.error("Kamera Error:", err);
+    alert("Gagal akses kamera. Pastikan menggunakan HTTPS.");
+  });
+}
+
+function stopScanKasir() {
+  if (html5QrCodeKasir) {
+    html5QrCodeKasir.stop().then(() => {
+      scannerActive = false;
+      document.getElementById("scannerContainerKasir").style.display = "none";
+    });
+  }
+}
+
+/* =======================
+   PENYEMPURNAAN TAMBAH KE KERANJANG
+   (Tetap menggunakan fungsi lama Anda dengan perbaikan reset)
+======================= */
+function resetInputKasir() {
+  document.getElementById("produkInput").value = "";
+  document.getElementById("produkId").value = "";
+  document.getElementById("qty").value = 1;
+}
+
+// Fungsi tambahKeKeranjang Anda tetap sama, namun pastikan 
+// pemanggilan resetInputKasir() dilakukan DI AKHIR proses.
+
+
+
+
+
+
+
 
 
 
@@ -242,21 +471,21 @@ function cetakStruk(data) {
 
   // ===== HEADER =====
   doc.setFontSize(12);
-  doc.text("TOKO ANDA", 40, y, { align: "center" });
+  doc.text("MAJU JAYA", 40, y, { align: "center" });
   y += 6;
 
   doc.setFontSize(9);
-  doc.text("Jl. Contoh Alamat", 40, y, { align: "center" });
+  doc.text("Jl. Mardani Raya", 40, y, { align: "center" });
   y += 6;
 
-  doc.text("--------------------------------", 40, y, { align: "center" });
+  doc.text("=====================================================", 40, y, { align: "center" });
   y += 5;
 
   // ===== TANGGAL =====
   doc.text(`Tanggal: ${new Date().toLocaleString("id-ID")}`, 5, y);
   y += 6;
 
-  doc.text("--------------------------------", 40, y, { align: "center" });
+  doc.text("=====================================================", 40, y, { align: "center" });
   y += 5;
 
   // ===== ITEM =====
@@ -279,7 +508,7 @@ function cetakStruk(data) {
     y += 5;
   });
 
-  doc.text("--------------------------------", 40, y, { align: "center" });
+  doc.text("=====================================================", 40, y, { align: "center" });
   y += 6;
 
   // ===== TOTAL =====
@@ -311,7 +540,7 @@ function cetakStruk(data) {
   y += 8;
 
   // ===== FOOTER =====
-  doc.text("Terima kasih 🙏", 40, y, { align: "center" });
+  doc.text("Terima kasih", 40, y, { align: "center" });
   y += 5;
   doc.text("Barang yang sudah dibeli", 40, y, { align: "center" });
   y += 4;

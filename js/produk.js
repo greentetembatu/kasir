@@ -1,73 +1,51 @@
 document.addEventListener("DOMContentLoaded", renderProduk);
 
 /* =======================
-   RENDER PRODUK
-======================= */
-/*function renderProduk() {
-  const tbody = document.getElementById("produkTable");
-  if (!tbody) return;
-
-  const produk = getProduk();
-  tbody.innerHTML = "";
-
-  if (produk.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align:center">
-          Belum ada produk
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  produk.forEach(p => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${p.nama}</td>
-      <td>Rp ${Number(p.modal).toLocaleString("id-ID")}</td>
-      <td>Rp ${Number(p.harga_jual).toLocaleString("id-ID")}</td>
-      <td>${p.stok}</td>
-      <td>
-        <button onclick="editProduk(${p.id})">Edit</button>
-        <button onclick="hapusProduk(${p.id})">Hapus</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}*/
-
-/* =======================
    SIMPAN PRODUK
 ======================= */
 function simpanProduk() {
   const produk = getProduk();
 
   const id = document.getElementById("produkId").value;
+  const barcode = document.getElementById("barcodeProduk").value.trim();
   const nama = document.getElementById("namaProduk").value.trim();
   const modal = Number(document.getElementById("modalProduk").value);
   const harga_jual = Number(document.getElementById("hargaProduk").value);
   const stok = Number(document.getElementById("stokProduk").value);
 
+  // Validasi Dasar
   if (!nama || modal <= 0 || harga_jual <= 0 || stok < 0) {
     alert("Lengkapi data dengan benar");
     return;
   }
 
+  // --- TAMBAHAN: Validasi Barcode Ganda ---
+  if (barcode !== "") {
+    const isDuplicate = produk.some(p => p.barcode === barcode && p.id != id);
+    if (isDuplicate) {
+      alert("⚠️ Barcode sudah digunakan oleh produk lain!");
+      return;
+    }
+  }
+
   if (id) {
+    // Edit Produk
     const index = produk.findIndex(p => p.id == id);
     if (index === -1) return;
 
     produk[index] = {
       ...produk[index],
+      barcode: barcode, 
       nama,
       modal,
       harga_jual,
       stok
     };
   } else {
+    // Tambah Produk Baru
     produk.push({
       id: Date.now(),
+      barcode: barcode,
       nama,
       modal,
       harga_jual,
@@ -83,47 +61,23 @@ function simpanProduk() {
 /* =======================
    EDIT PRODUK
 ======================= */
-/*function editProduk(id) {
-  const produk = getProduk();
-  const p = produk.find(item => item.id === id);
-
-  if (!p) return;
-
-  document.getElementById("produkId").value = p.id;
-  document.getElementById("namaProduk").value = p.nama;
-  document.getElementById("modalProduk").value = p.modal;
-  document.getElementById("hargaProduk").value = p.harga_jual;
-  document.getElementById("stokProduk").value = p.stok;
-}*/
 function editProduk(id) {
   const produk = getProduk();
   const p = produk.find(item => item.id === id);
   if (!p) return;
 
+  // Mengisi form dengan data yang ada
   document.getElementById("produkId").value = p.id;
+  document.getElementById("barcodeProduk").value = p.barcode || "";
   document.getElementById("namaProduk").value = p.nama;
   document.getElementById("modalProduk").value = p.modal;
   document.getElementById("hargaProduk").value = p.harga_jual;
   document.getElementById("stokProduk").value = p.stok;
 }
 
-
 /* =======================
    HAPUS PRODUK
 ======================= */
-/*function hapusProduk(id) {
-  if (!confirm("Hapus produk ini?")) return;
-
-  let produk = getProduk();
-  produk = produk.filter(p => p.id !== id);
-
-  saveProduk(produk);
-  renderProduk();
-}*/
-
-
-
-
 function hapusProduk(id) {
   if (!confirm("Hapus produk ini?")) return;
 
@@ -134,6 +88,137 @@ function hapusProduk(id) {
   renderProduk();
 }
 
+/* =======================
+   RESET FORM
+======================= */
+function resetForm() {
+  document.getElementById("produkId").value = "";
+  document.getElementById("barcodeProduk").value = "";
+  document.getElementById("namaProduk").value = "";
+  document.getElementById("modalProduk").value = "";
+  document.getElementById("hargaProduk").value = "";
+  document.getElementById("stokProduk").value = "";
+}
+
+/* =======================
+   RENDER TABEL (Update: Tambah Barcode)
+======================= */
+function renderProduk() {
+  const tbody = document.getElementById("produkTable");
+  if (!tbody) return;
+
+  const produk = getProduk();
+  const keyword = document.getElementById("searchProduk")?.value.toLowerCase() || "";
+  const filter = document.getElementById("filterStok")?.value || "all";
+
+  tbody.innerHTML = "";
+
+  const hasil = produk.filter(p => {
+    const cocokNama = p.nama.toLowerCase().includes(keyword);
+    const cocokBarcode = (p.barcode || "").toLowerCase().includes(keyword);
+
+    let cocokStok = true;
+    if (filter === "tersedia") cocokStok = p.stok > 0;
+    if (filter === "habis") cocokStok = p.stok === 0;
+    if (filter === "menipis") cocokStok = p.stok > 0 && p.stok <= 5;
+
+    return (cocokNama || cocokBarcode) && cocokStok;
+  });
+
+  if (hasil.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">Produk tidak ditemukan</td></tr>`;
+    return;
+  }
+
+  hasil.forEach(p => {
+    const tr = document.createElement("tr");
+
+    let badge = p.stok === 0 ? "❌ Habis" : (p.stok <= 5 ? "⚠️ Menipis" : "✅ Aman");
+
+    // Sekarang menggunakan 6 kolom (td)
+    tr.innerHTML = `
+      <td><img src="${p.foto || 'https://via.placeholder.com/50'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;"></td>
+      <td><code style="background: #eee; padding: 2px 5px; border-radius: 4px;">${p.barcode || '-'}</code></td>
+      <td><strong>${p.nama}</strong></td>
+      <td>Rp ${p.modal.toLocaleString("id-ID")}</td>
+      <td>Rp ${p.harga_jual.toLocaleString("id-ID")}</td>
+      <td>${p.stok} <br><small>${badge}</small></td>
+      <td>
+        <button onclick="editProduk(${p.id})">Edit</button>
+        <button onclick="hapusProduk(${p.id})">Hapus</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+/* =======================
+   FUNGSI BARCODE SCANNER
+======================= */
+let html5QrCode;
+
+function mulaiScan() {
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
+    
+    const config = { 
+        fps: 20, 
+        qrbox: { width: 280, height: 180 },
+        aspectRatio: 1.0
+    };
+
+    html5QrCode.start(
+        { facingMode: "environment" }, 
+        config, 
+        (barcodeText) => {
+          playBeep(); 
+            if (navigator.vibrate) navigator.vibrate(100); // Getar HP
+            if (navigator.vibrate) navigator.vibrate(100);
+            stopScan();
+
+            document.getElementById("barcodeProduk").value = barcodeText;
+
+            const produk = getProduk();
+            const pTerdaftar = produk.find(p => p.barcode === barcodeText);
+
+            if (pTerdaftar) {
+                alert("Produk ditemukan: " + pTerdaftar.nama + ". Mengalihkan ke mode Edit.");
+                isiFormProduk(pTerdaftar);
+            } else {
+                alert("Barang Baru terdeteksi!");
+                // Simpan barcode, bersihkan field lain
+                const currentBarcode = barcodeText;
+                resetForm();
+                document.getElementById("barcodeProduk").value = currentBarcode;
+                document.getElementById("namaProduk").focus();
+            }
+        }
+    ).catch(err => {
+        alert("Gagal akses kamera: " + err);
+    });
+}
+
+function stopScan() {
+    if (html5QrCode) {
+        html5QrCode.stop().catch(err => console.error("Error stopping scanner", err));
+    }
+}
+
+// Fungsi pembantu untuk memindahkan data ke form
+function isiFormProduk(p) {
+    document.getElementById("produkId").value = p.id;
+    document.getElementById("barcodeProduk").value = p.barcode || "";
+    document.getElementById("namaProduk").value = p.nama;
+    document.getElementById("modalProduk").value = p.modal;
+    document.getElementById("hargaProduk").value = p.harga_jual;
+    document.getElementById("stokProduk").value = p.stok;
+}
+
+
+
+
+
+
 
 
 
@@ -142,190 +227,30 @@ function hapusProduk(id) {
 
 
 /* =======================
-   RESET FORM
+   FUNGSI BUNYI BEEP
 ======================= */
-function resetForm() {
-  document.getElementById("produkId").value = "";
-  document.getElementById("namaProduk").value = "";
-  document.getElementById("modalProduk").value = "";
-  document.getElementById("hargaProduk").value = "";
-  document.getElementById("stokProduk").value = "";
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function renderProduk() {
-  const tbody = document.getElementById("produkTable");
-  if (!tbody) return;
-
-  const produk = getProduk();
-
-  const keyword = document
-    .getElementById("searchProduk")?.value
-    .toLowerCase() || "";
-
-  const filter = document.getElementById("filterStok")?.value || "all";
-
-  tbody.innerHTML = "";
-
-  const hasil = produk.filter(p => {
-    const cocokNama = p.nama.toLowerCase().includes(keyword);
-
-    let cocokStok = true;
-    if (filter === "tersedia") cocokStok = p.stok > 0;
-    if (filter === "habis") cocokStok = p.stok === 0;
-    if (filter === "menipis") cocokStok = p.stok > 0 && p.stok <= 5;
-
-    return cocokNama && cocokStok;
-  });
-
-  if (hasil.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align:center">
-          Produk tidak ditemukan
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  hasil.forEach(p => {
-    const tr = document.createElement("tr");
-
-    let badge = "";
-    if (p.stok === 0) badge = "❌ Habis";
-    else if (p.stok <= 5) badge = "⚠️ Menipis";
-    else badge = "✅ Aman";
-
-    tr.innerHTML = `
-      <td>${p.nama}</td>
-      <td>Rp ${p.modal.toLocaleString("id-ID")}</td>
-      <td>Rp ${p.harga_jual.toLocaleString("id-ID")}</td>
-      <td>${p.stok} <small>${badge}</small></td>
-      <td>
-        <button onclick="editProduk(${p.id})">Edit</button>
-        <button onclick="hapusProduk(${p.id})">Hapus</button>
-      </td>
-    `;
-
-    tbody.appendChild(tr);
-  });
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*document.getElementById("searchProduk").addEventListener("input", e => {
-  const keyword = e.target.value.toLowerCase();
-  const produk = getProduk().filter(p =>
-    p.nama.toLowerCase().includes(keyword)
-  );
-
-  renderProduk(produk);
-});*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function mulaiScan() {
-  const video = document.getElementById("video");
-  const input = document.getElementById("barcodeProduk");
-
-  if (!video || !input) {
-    alert("Elemen barcode tidak ditemukan");
-    return;
-  }
-
-  video.style.display = "block";
-
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(s => {
-      stream = s;
-      video.srcObject = stream;
-      video.setAttribute("playsinline", true);
-      video.play();
-
-      scanner = new BarcodeDetector({
-        formats: ["code_128", "ean_13", "ean_8", "qr_code"]
-      });
-
-      scanLoop(video, input);
-    })
-    .catch(() => alert("Kamera tidak bisa diakses"));
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-function scanLoop(video, input) {
-  if (!scanner) return;
-
-  scanner.detect(video).then(codes => {
-    if (codes.length > 0) {
-      input.value = codes[0].rawValue;
-      stopScan();
-    } else {
-      requestAnimationFrame(() => scanLoop(video, input));
+function playBeep() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        // Frekuensi 660Hz (suara beep scanner standar)
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(660, audioCtx.currentTime);
+        
+        // Atur volume dan durasi
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); // Volume 20%
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1); // Menghilang dalam 0.1 detik
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+    } catch (e) {
+        console.log("Audio API tidak didukung atau diblokir browser");
     }
-  });
 }
 
 
@@ -336,16 +261,110 @@ function scanLoop(video, input) {
 
 
 
-function stopScan() {
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-    stream = null;
-  }
 
-  const video = document.getElementById("video");
-  if (video) {
-    video.pause();
-    video.srcObject = null;
-    video.style.display = "none";
-  }
+
+
+
+
+
+
+
+
+
+
+// Di dalam simpanProduk()
+/* Variabel global untuk menampung gambar sementara */
+let fotoBase64 = ""; 
+
+// Fungsi untuk menangkap upload gambar & pratinjau
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function() {
+        const output = document.getElementById('imgPreview');
+        output.src = reader.result;
+        output.style.display = 'block';
+        fotoBase64 = reader.result; // Hasil string base64
+    };
+    reader.readAsDataURL(file);
+}
+
+function simpanProduk() {
+    const produk = getProduk() || []; // Proteksi jika data kosong
+
+    // Ambil elemen secara aman
+    const elId = document.getElementById("produkId");
+    const elBarcode = document.getElementById("barcodeProduk");
+    const elNama = document.getElementById("namaProduk");
+    const elModal = document.getElementById("modalProduk");
+    const elHarga = document.getElementById("hargaProduk");
+    const elStok = document.getElementById("stokProduk");
+
+    // Pastikan elemen ada sebelum mengambil .value (Cegah Error baris ini)
+    if (!elNama || !elModal) {
+        console.error("Elemen form tidak ditemukan di HTML");
+        return;
+    }
+
+    const id = elId.value; 
+    const barcode = elBarcode ? elBarcode.value.trim() : "";
+    const nama = elNama.value.trim();
+    const modal = Number(elModal.value);
+    const harga_jual = Number(elHarga.value);
+    const stok = Number(elStok.value);
+
+    // Validasi input
+    if (!nama || modal <= 0 || harga_jual <= 0) {
+        alert("Lengkapi data produk dengan benar!");
+        return;
+    }
+
+    // Validasi Barcode Ganda
+    if (barcode !== "") {
+        const isDuplicate = produk.some(p => p.barcode === barcode && p.id != id);
+        if (isDuplicate) {
+            alert("⚠️ Barcode ini sudah terdaftar pada produk lain!");
+            return;
+        }
+    }
+
+    if (id) {
+        // --- PROSES EDIT ---
+        const index = produk.findIndex(p => p.id == id);
+        if (index !== -1) {
+            produk[index] = {
+                ...produk[index],
+                barcode: barcode,
+                nama: nama,
+                modal: modal,
+                harga_jual: harga_jual,
+                stok: stok,
+                // Gunakan foto baru jika ada, jika tidak gunakan foto lama
+                foto: fotoBase64 || produk[index].foto || "" 
+            };
+        }
+    } else {
+        // --- PROSES TAMBAH BARU ---
+        produk.push({
+            id: Date.now(),
+            barcode: barcode,
+            nama: nama,
+            modal: modal,
+            harga_jual: harga_jual,
+            stok: stok,
+            foto: fotoBase64 || "" // Placeholder kosong jika tidak ada foto
+        });
+    }
+
+    saveProduk(produk);
+    resetForm();
+    renderProduk();
+    
+    // Reset status foto setelah simpan
+    fotoBase64 = "";
+    if(document.getElementById('imgPreview')) document.getElementById('imgPreview').style.display = 'none';
+    
+    alert("Produk berhasil disimpan!");
 }

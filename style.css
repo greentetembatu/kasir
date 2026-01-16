@@ -128,3 +128,44 @@ body {
     margin-bottom: 6px;
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+.autocomplete{
+  position: relative;
+}
+
+.autocomplete-list {
+  border: 1px solid #ddd;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  background: white;
+  width: 100%;
+  z-index: 99;
+}
+
+.autocomplete-item {
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+/* Highlight saat mouse hover */
+.autocomplete-item:hover {
+  background-color: #f0f0f0;
+}
+
+/* Highlight saat navigasi keyboard */
+.autocomplete-active {
+  background-color: #2196F3 !important;
+  color: white !important;
+}
