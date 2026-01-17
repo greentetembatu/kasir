@@ -1,108 +1,114 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Dashboard Admin - POS UMKM</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="shortcut icon" href="icon-512.ico" type="image/x-icon" />
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#0d6efd" />
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Admin - POS UMKM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="app">
-      <!-- Sidebar -->
-      <aside class="sidebar">
+  <link rel="shortcut icon" href="icon-512.ico" type="image/x-icon" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d6efd" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
         <h2>POS UMKM</h2>
-        <ul>
-          <li class="active">Dashboard</li>
-          <li><a href="kasir.html">Kasir</a></li>
-          <li><a href="produk.html">Produk</a></li>
-          <li><a href="riwayat.html">Riwayat</a></li>
-        </ul>
-      </aside>
+      </div>
 
-      <!-- Main Content -->
-      <main class="content">
+      <ul class="sidebar-menu">
+        <li class="active">Dashboard</li>
+        <li><a href="kasir.html">Kasir</a></li>
+        <li><a href="produk.html">Produk</a></li>
+        <li><a href="riwayat.html">Riwayat</a></li>
+      </ul>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="content">
+
+      <!-- HEADER -->
+      <header class="content-header">
         <h1>Dashboard</h1>
+        <a href="kasir.html" class="btn-primary">➜ Buka Kasir</a>
+      </header>
 
-        <div class="stats">
-          <div class="card">
-            <h3>Total Produk</h3>
-            <p id="totalProduk">0</p>
-          </div>
-
-          <div class="card">
-            <h3>Total Transaksi</h3>
-            <p id="totalTransaksi">0</p>
-          </div>
-
-          <div class="card">
-            <h3>Omzet</h3>
-            <p id="totalOmzet">Rp 0</p>
-          </div>
-
-          <div class="card">
-            <h3>Laba</h3>
-            <p id="totalLaba">Rp 0</p>
-          </div>
+      <!-- STATISTIC CARDS -->
+      <section class="stats">
+        <div class="card stat-card">
+          <h3>Total Produk</h3>
+          <p id="totalProduk">0</p>
         </div>
 
-        <a href="kasir.html" class="btn-primary"> ➜ Buka Kasir </a>
-      </main>
-    </div>
+        <div class="card stat-card">
+          <h3>Total Transaksi</h3>
+          <p id="totalTransaksi">0</p>
+        </div>
 
-    <div class="card">
-      <h3>Cadangan Data (Backup)</h3>
-      <p>Gunakan fitur ini untuk memindahkan data antar perangkat.</p>
-      <div style="display: flex; gap: 10px; margin-top: 10px">
-        <button
-          onclick="eksporData()"
-          style="background: #0dc6de; color: white; flex: 1"
-        >
-          📤 Ekspor Data
-        </button>
+        <div class="card stat-card">
+          <h3>Omzet</h3>
+          <p id="totalOmzet">Rp 0</p>
+        </div>
 
-        <label
-          for="importFile"
-          style="
-            background: #ffc107;
-            color: black;
-            flex: 1;
-            padding: 10px;
-            text-align: center;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-          "
-        >
-          📥 Impor Data
-        </label>
-        <input
-          type="file"
-          id="importFile"
-          accept=".json"
-          onchange="imporData(event)"
-          style="display: none"
-        />
-      </div>
-    </div>
+        <div class="card stat-card">
+          <h3>Laba</h3>
+          <p id="totalLaba">Rp 0</p>
+        </div>
+      </section>
 
-    <script src="js/data.js"></script>
-    <!--<script src="js/kasir.js"></script>-->
-    <!--<script src="js/produk.js"></script>-->
-    <script src="js/dasboard.js"></script>
-    <script src="js/produk.js"></script>
-    <script src="js/storage.js"></script>
+      <!-- BACKUP SECTION -->
+      <section class="backup-section">
+        <div class="card backup-card">
+          <h3>Cadangan Data (Backup)</h3>
+          <p>
+            Gunakan fitur ini untuk memindahkan data antar perangkat
+            atau sebagai cadangan.
+          </p>
 
-    <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("service-worker.js")
-          .then(() => console.log("Service Worker registered"))
-          .catch((err) => console.error("SW failed:", err));
-      }
-    </script>
-  </body>
+          <div class="backup-actions">
+            <button
+              class="btn-export"
+              onclick="eksporData()"
+            >
+              📤 Ekspor Data
+            </button>
+
+            <label for="importFile" class="btn-import">
+              📥 Impor Data
+            </label>
+
+            <input
+              type="file"
+              id="importFile"
+              accept=".json"
+              onchange="imporData(event)"
+              hidden
+            />
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- SCRIPT (TIDAK DIUBAH) -->
+  <script src="js/data.js"></script>
+  <script src="js/dasboard.js"></script>
+  <script src="js/produk.js"></script>
+  <script src="js/storage.js"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("service-worker.js")
+        .then(() => console.log("Service Worker registered"))
+        .catch((err) => console.error("SW failed:", err));
+    }
+  </script>
+</body>
 </html>
