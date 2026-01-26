@@ -171,7 +171,7 @@ function mulaiScan() {
         { facingMode: "environment" }, 
         config, 
         (barcodeText) => {
-          playDoorbell(); 
+          playCarHorn(); 
             if (navigator.vibrate) navigator.vibrate(100); // Getar HP
             if (navigator.vibrate) navigator.vibrate(100);
             stopScan();
@@ -227,41 +227,49 @@ function isiFormProduk(p) {
 
 
 /* =======================
-   FUNGSI BUNYI Door Bell
+   FUNGSI BUNYI Car Horn
 ======================= */
-function playDoorbell() {
+function playCarHorn() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
+        
+        // Kita gunakan dua sumber suara agar suaranya "tebal" dan berisik
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
 
-        oscillator.connect(gainNode);
+        osc1.connect(gainNode);
+        osc2.connect(gainNode);
         gainNode.connect(audioCtx.destination);
 
-        // 1. Gunakan "square" untuk suara tajam 'treeeet'
-        oscillator.type = "square"; 
-        
-        // 2. Frekuensi sedikit diturunkan agar lebih tebal (440Hz - 800Hz)
-        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+        // Tipe 'sawtooth' memberikan efek kasar khas klakson
+        osc1.type = "sawtooth";
+        osc2.type = "sawtooth";
 
-        // 3. Atur Volume (Gain)
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
-        
-        // 4. Durasi lebih panjang (misal 0.8 detik)
-        const duration = 0.8; 
-        
-        // Efek fade out di akhir agar tidak mati mendadak (klik)
-        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+        // Frekuensi klakson mobil biasanya di sekitar 400Hz - 500Hz
+        // Kita buat sedikit berbeda (detuned) agar terdengar natural/sumbang
+        osc1.frequency.setValueAtTime(400, audioCtx.currentTime); 
+        osc2.frequency.setValueAtTime(410, audioCtx.currentTime); 
 
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + duration);
+        // Volume klakson biasanya konstan lalu mati mendadak
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
         
+        // Durasi panjang (1.5 detik)
+        const duration = 1.5;
+
+        // Efek sedikit memudar di akhir agar tidak pecah di speaker
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+        osc1.start();
+        osc2.start();
+        
+        osc1.stop(audioCtx.currentTime + duration);
+        osc2.stop(audioCtx.currentTime + duration);
+
     } catch (e) {
-        console.log("Audio API tidak didukung atau diblokir browser");
+        console.log("Audio tidak dapat diputar");
     }
 }
-
-
 
 
 
@@ -377,3 +385,4 @@ function simpanProduk() {
     alert("Produk berhasil disimpan!");
 
 }
+
