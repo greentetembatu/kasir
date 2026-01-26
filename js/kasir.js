@@ -334,26 +334,52 @@ function bayar() {
 
 
 /* =======================
-   FUNGSI BUNYI BEEP (Scanner)
+   FUNGSI BUNYI CarHorn (Scanner)
 ======================= */
-function playBeep() {
+function playCarHorn() {
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioCtx.createOscillator();
+    
+    // Kita pakai 2 oscillator untuk efek suara "stereo" yang padat
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    oscillator.connect(gainNode);
+
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(660, audioCtx.currentTime);
-    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.1);
+
+    // Gunakan tipe 'sawtooth' agar suaranya "garang" dan nyaring
+    osc1.type = "sawtooth";
+    osc2.type = "sawtooth";
+
+    // Nada dasar yang lebih rendah (350Hz dan 354Hz) agar terdengar berat
+    const freq = 350;
+    osc1.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc2.frequency.setValueAtTime(freq + 4, audioCtx.currentTime); 
+
+    // EFEK KHUSUS: Membuat nada sedikit turun (pitch drop) agar terdengar alami
+    osc1.frequency.exponentialRampToValueAtTime(freq - 10, audioCtx.currentTime + 0.8);
+    osc2.frequency.exponentialRampToValueAtTime(freq - 6, audioCtx.currentTime + 0.8);
+
+    // Atur Volume
+    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    
+    // Durasi klakson (0.8 detik - cukup panjang tapi tidak mengganggu)
+    const duration = 0.8;
+
+    // Fade out halus di akhir agar tidak terdengar bunyi 'klik' tajam
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+    osc1.start();
+    osc2.start();
+    
+    osc1.stop(audioCtx.currentTime + duration);
+    osc2.stop(audioCtx.currentTime + duration);
   } catch (e) {
-    console.log("Audio beep gagal");
+    console.log("Audio klakson gagal: ", e);
   }
 }
-
 /* =======================
    SCANNER KASIR
 ======================= */
@@ -391,7 +417,7 @@ function startScanKasir() {
     { facingMode: "environment" },
     config,
     (barcodeText) => {
-      playBeep();
+      playCarHorn();
       if (navigator.vibrate) navigator.vibrate(100);
 
       const produk = getProduk();
@@ -549,3 +575,4 @@ function cetakStruk(data) {
   // ===== SIMPAN =====
   doc.save(`struk-${Date.now()}.pdf`);
 }
+
