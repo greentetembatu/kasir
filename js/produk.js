@@ -171,7 +171,7 @@ function mulaiScan() {
         { facingMode: "environment" }, 
         config, 
         (barcodeText) => {
-          playBeep(); 
+          playDoorbell(); 
             if (navigator.vibrate) navigator.vibrate(100); // Getar HP
             if (navigator.vibrate) navigator.vibrate(100);
             stopScan();
@@ -227,9 +227,9 @@ function isiFormProduk(p) {
 
 
 /* =======================
-   FUNGSI BUNYI BEEP
+   FUNGSI BUNYI Door Bell
 ======================= */
-function playBeep() {
+function playDoorbell() {
     try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
@@ -238,16 +238,24 @@ function playBeep() {
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
 
-        // Frekuensi 660Hz (suara beep scanner standar)
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(660, audioCtx.currentTime);
+        // 1. Gunakan "square" untuk suara tajam 'treeeet'
+        oscillator.type = "square"; 
         
-        // Atur volume dan durasi
-        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); // Volume 20%
-        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1); // Menghilang dalam 0.1 detik
+        // 2. Frekuensi sedikit diturunkan agar lebih tebal (440Hz - 800Hz)
+        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+
+        // 3. Atur Volume (Gain)
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+        
+        // 4. Durasi lebih panjang (misal 0.8 detik)
+        const duration = 0.8; 
+        
+        // Efek fade out di akhir agar tidak mati mendadak (klik)
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
 
         oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.1);
+        oscillator.stop(audioCtx.currentTime + duration);
+        
     } catch (e) {
         console.log("Audio API tidak didukung atau diblokir browser");
     }
@@ -367,4 +375,5 @@ function simpanProduk() {
     if(document.getElementById('imgPreview')) document.getElementById('imgPreview').style.display = 'none';
     
     alert("Produk berhasil disimpan!");
+
 }
